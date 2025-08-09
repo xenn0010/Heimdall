@@ -48,33 +48,42 @@ export async function callClaude(messages: ClaudeMessage[]): Promise<string> {
   return data.content[0].text;
 }
 
-export async function planGitOperations(instruction: string, repoContext: string): Promise<{
+export async function planGitOperations(instruction: string, repoContext: string, codebaseContext?: string): Promise<{
   operations: Array<{ command: string; args: string[] }>;
   explanation: string;
 }> {
   const messages: ClaudeMessage[] = [
     {
       role: 'user',
-      content: `You are Heimdall, a Git automation assistant. Given this instruction and repo context, break it down into specific Git operations.
+      content: `You are Heimdall, an intelligent Git automation assistant. Analyze the instruction, repository state, and codebase to plan the optimal Git operations.
 
 Repository Context:
 ${repoContext}
 
+${codebaseContext ? `\nCodebase Context:\n${codebaseContext}` : ''}
+
 User Instruction: "${instruction}"
+
+As an agentic assistant, you should:
+1. Analyze the codebase structure to understand what files need changes
+2. Consider dependencies and imports when making fixes
+3. Plan operations that make logical sense together
+4. Generate meaningful commit messages based on actual changes
 
 IMPORTANT: Respond with ONLY a valid JSON object, no markdown formatting, no explanations outside the JSON.
 
 Format:
 {
   "operations": [
-    { "command": "apply-fix", "args": ["file.ts", "--update", "specific change"] },
+    { "command": "explore", "args": ["src/", "*.ts"] },
+    { "command": "apply-fix", "args": ["file.ts", "--update", "specific change based on code analysis"] },
     { "command": "commit", "args": [] },
     { "command": "pr", "args": ["--base", "main"] }
   ],
-  "explanation": "I'll apply the fix to file.ts, then commit the changes and create a PR."
+  "explanation": "I analyzed the codebase structure and will apply targeted fixes to file.ts based on the code patterns I found."
 }
 
-Available commands: apply-fix, commit, pr, status, gh`
+Available commands: apply-fix, commit, pr, status, gh, explore`
     }
   ];
 

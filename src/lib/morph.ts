@@ -30,10 +30,3 @@ export async function applyUpdate(originalCode: string, instruction: string): Pr
 
   return mergedCode.trim();
 }
-
-// Alternative implementation for when we have more details about the Morph API
-export async function applyUpdateAdvanced(originalCode: string, instruction: string): Promise<string> {
-  // This would be the real implementation once we know the exact Morph API format
-  // For now, return a simple transformation as a fallback
-  return `${originalCode}\n\n// TODO: Apply update: ${instruction}`;
-}

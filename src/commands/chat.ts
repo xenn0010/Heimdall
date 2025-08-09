@@ -4,6 +4,7 @@ import ora from 'ora';
 import { createInterface } from 'readline';
 import { planGitOperations } from '../lib/claude.js';
 import { getRepoContext } from '../lib/git.js';
+import { analyzeCodebase, readFileWithContext } from '../lib/codebase.js';
 import { applyFixCommand } from './apply-fix.js';
 import { commitCommand } from './commit.js';
 import { prCommand } from './pr.js';
@@ -21,8 +22,23 @@ export const chatCommand = new Command('chat')
       // Get repository context
       const repoContext = await getRepoContext();
       
+      // Get codebase context for more intelligent planning
+      const codebaseContext = await analyzeCodebase();
+      
+      // Read key files if request mentions specific files
+      const mentionedFiles = extractMentionedFiles(instruction);
+      let fileContents = '';
+      for (const file of mentionedFiles) {
+        try {
+          const content = await readFileWithContext(file);
+          fileContents += `\n\n${content}`;
+        } catch (error) {
+          // File doesn't exist or can't read, skip
+        }
+      }
+      
       // Plan operations with Claude
-      const plan = await planGitOperations(instruction, repoContext);
+      const plan = await planGitOperations(instruction, repoContext, codebaseContext + fileContents);
       
       spinner.succeed('Plan created');
       
@@ -78,6 +94,30 @@ export const chatCommand = new Command('chat')
     }
   });
 
+function extractMentionedFiles(instruction: string): string[] {
+  const files: string[] = [];
+  
+  // Extract .ts, .js, .tsx, .jsx files mentioned
+  const fileMatches = instruction.match(/[\w\-\.\/]+\.(ts|js|tsx|jsx|py|go|rs|java|cpp|c|h)/g);
+  if (fileMatches) {
+    files.push(...fileMatches);
+  }
+  
+  // Extract "file.ext" or 'file.ext' patterns
+  const quotedFiles = instruction.match(/['"]([\w\-\.\/]+\.[a-z]+)['"]/g);
+  if (quotedFiles) {
+    files.push(...quotedFiles.map(f => f.slice(1, -1)));
+  }
+  
+  // Add src/ prefix if file seems to be in src
+  return files.map(file => {
+    if (!file.includes('/') && !file.startsWith('src/')) {
+      return `src/lib/${file}`;
+    }
+    return file;
+  });
+}
+
 async function getUserInput(): Promise<string> {
   const rl = createInterface({
     input: process.stdin,
@@ -94,6 +134,14 @@ async function getUserInput(): Promise<string> {
 
 async function executeOperation(command: string, args: string[]): Promise<void> {
   switch (command) {
+    case 'explore':
+      // Execute codebase exploration
+      const pattern = args[0] || '**/*.{ts,js,tsx,jsx}';
+      const maxFiles = args[1] ? parseInt(args[1]) : 10;
+      const analysis = await analyzeCodebase(pattern, maxFiles);
+      console.log(chalk.gray(analysis));
+      break;
+      
     case 'apply-fix':
       // Parse apply-fix arguments: [file, '--update', instruction]
       const file = args[0];

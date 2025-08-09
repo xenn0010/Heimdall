@@ -30,6 +30,7 @@
     "commander": "^12.1.0",
     "dotenv": "^17.2.1",
     "execa": "^9.3.0",
+    "glob": "^11.0.3",
     "node-fetch": "^3.3.2",
     "openai": "^4.104.0",
     "ora": "^8.0.1"
@@ -49,5 +50,17 @@
   ],
   "engines": {
     "node": ">=18.0.0"
+  },
+  "private": false,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/heimdall-ai/heimdall-cli.git"
+  },
+  "bugs": {
+    "url": "https://github.com/heimdall-ai/heimdall-cli/issues"
+  },
+  "homepage": "https://github.com/heimdall-ai/heimdall-cli#readme",
+  "publishConfig": {
+    "access": "public"
   }
 }

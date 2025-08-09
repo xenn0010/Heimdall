@@ -9,6 +9,7 @@ import { commitCommand } from '../commands/commit.js';
 import { prCommand } from '../commands/pr.js';
 import { applyFixCommand } from '../commands/apply-fix.js';
 import { chatCommand } from '../commands/chat.js';
+import { exploreCommand } from '../commands/explore.js';
 import { ghCommand } from '../commands/gh.js';
 
 const program = new Command();
@@ -25,6 +26,7 @@ program.addCommand(commitCommand);
 program.addCommand(prCommand);
 program.addCommand(applyFixCommand);
 program.addCommand(chatCommand);
+program.addCommand(exploreCommand);
 program.addCommand(ghCommand);
 
 // Global error handler
