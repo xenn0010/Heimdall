@@ -5,4 +5,5 @@ export * from './pr.js';
 export * from './apply-fix.js';
 export * from './chat.js';
 export * from './explore.js';
+export * from './clone.js';
 export { ghCommand } from './gh.js';

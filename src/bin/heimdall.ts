@@ -10,9 +10,22 @@ import { prCommand } from '../commands/pr.js';
 import { applyFixCommand } from '../commands/apply-fix.js';
 import { chatCommand } from '../commands/chat.js';
 import { exploreCommand } from '../commands/explore.js';
+import { cloneCommand } from '../commands/clone.js';
 import { ghCommand } from '../commands/gh.js';
 
 const program = new Command();
+
+// Show banner when no command provided or when help is shown
+const showBanner = () => {
+  console.log(chalk.cyan(`
+██╗  ██╗███████╗██╗███╗   ███╗██████╗  █████╗ ██╗     ██╗     
+██║  ██║██╔════╝██║████╗ ████║██╔══██╗██╔══██╗██║     ██║     
+███████║█████╗  ██║██╔████╔██║██████╔╝███████║██║     ██║     
+██╔══██║██╔══╝  ██║██║╚██╔╝██║██╔══██╗██╔══██║██║     ██║     
+██║  ██║███████╗██║██║ ╚═╝ ██║██║  ██║██║  ██║███████╗███████╗
+╚═╝  ╚═╝╚══════╝╚═╝╚═╝     ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝╚══════╝`));
+  console.log(chalk.gray('                   Git, but agentic\n'));
+};
 
 program
   .name('heimdall')
@@ -20,6 +33,7 @@ program
   .version('0.1.0');
 
 // Add commands
+program.addCommand(cloneCommand);
 program.addCommand(initCommand);
 program.addCommand(statusCommand);
 program.addCommand(commitCommand);
@@ -42,10 +56,11 @@ program.exitOverride((err) => {
   process.exit(1);
 });
 
-// Parse arguments
-program.parse(process.argv);
-
-// If no command provided, show help
+// If no command provided, show banner and help
 if (!process.argv.slice(2).length) {
+  showBanner();
   program.outputHelp();
+} else {
+  // Parse arguments
+  program.parse(process.argv);
 }

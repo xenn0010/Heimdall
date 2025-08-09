@@ -1,0 +1,13 @@
+{
+  "defaultBranch": "main",
+  "morphModel": "morph-v3-large",
+  "mcpGithubCommand": "docker",
+  "mcpGithubArgs": [
+    "run",
+    "-i",
+    "--rm",
+    "-e",
+    "GITHUB_PERSONAL_ACCESS_TOKEN",
+    "ghcr.io/github/github-mcp-server"
+  ]
+}
