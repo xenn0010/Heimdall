@@ -23,7 +23,22 @@ export const chatCommand = new Command('chat')
       const repoContext = await getRepoContext();
       
       // Get codebase context for more intelligent planning
+      spinner.text = 'Analyzing codebase structure...';
       const codebaseContext = await analyzeCodebase();
+      
+      // If no files found in analysis, do a broader search
+      if (!codebaseContext.includes('files):') || codebaseContext.includes('(0 files)')) {
+        spinner.text = 'Searching for all code files...';
+        const broadContext = await analyzeCodebase('**/*.{js,ts,tsx,jsx,py,go,rs,java,cpp,c,h}', 15);
+        if (broadContext && broadContext !== codebaseContext) {
+          const combinedContext = codebaseContext + '\n\nBroader search results:\n' + broadContext;
+          var finalContext = combinedContext;
+        } else {
+          var finalContext = codebaseContext;
+        }
+      } else {
+        var finalContext = codebaseContext;
+      }
       
       // Read key files if request mentions specific files
       const mentionedFiles = extractMentionedFiles(instruction);
@@ -38,7 +53,7 @@ export const chatCommand = new Command('chat')
       }
       
       // Plan operations with Claude
-      const plan = await planGitOperations(instruction, repoContext, codebaseContext + fileContents);
+      const plan = await planGitOperations(instruction, repoContext, finalContext + fileContents);
       
       spinner.succeed('Plan created');
       

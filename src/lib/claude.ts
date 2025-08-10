@@ -64,10 +64,12 @@ ${codebaseContext ? `\nCodebase Context:\n${codebaseContext}` : ''}
 
 User Instruction: "${instruction}"
 
+CRITICAL: You MUST use the actual files found in the Codebase Context above. DO NOT assume standard file structures like src/main.ts or src/app/routes.ts unless they appear in the codebase analysis.
+
 As an agentic assistant, you should:
-1. Analyze the codebase structure to understand what files need changes
-2. Consider dependencies and imports when making fixes
-3. Plan operations that make logical sense together
+1. ONLY reference files that actually exist in the Codebase Context
+2. If no files are found in codebase analysis, use "explore" command first to discover structure
+3. Base all apply-fix operations on real file paths from the codebase analysis
 4. Generate meaningful commit messages based on actual changes
 
 IMPORTANT: Respond with ONLY a valid JSON object, no markdown formatting, no explanations outside the JSON.
@@ -75,15 +77,16 @@ IMPORTANT: Respond with ONLY a valid JSON object, no markdown formatting, no exp
 Format:
 {
   "operations": [
-    { "command": "explore", "args": ["src/", "*.ts"] },
-    { "command": "apply-fix", "args": ["file.ts", "--update", "specific change based on code analysis"] },
-    { "command": "commit", "args": [] },
-    { "command": "pr", "args": ["--base", "main"] }
+    { "command": "explore", "args": ["."] },
+    { "command": "apply-fix", "args": ["[actual-file-from-analysis]", "--update", "specific change based on real file analysis"] },
+    { "command": "commit", "args": [] }
   ],
-  "explanation": "I analyzed the codebase structure and will apply targeted fixes to file.ts based on the code patterns I found."
+  "explanation": "I will work with the actual files found in the codebase analysis, not assumed file structures."
 }
 
-Available commands: apply-fix, commit, pr, status, gh, explore`
+Available commands: apply-fix, commit, pr, status, gh, explore
+
+REMEMBER: Use real file paths from the Codebase Context, not assumed standard structures!`
     }
   ];
 
