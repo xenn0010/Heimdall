@@ -17,10 +17,32 @@ export const exploreCommand = new Command('explore')
         return;
       }
       
+      // Handle specific file names as patterns
+      if (path && !path.includes('*') && !path.includes('/')) {
+        // If it's a specific file name, search for it
+        const specificFilePattern = `**/${path}`;
+        console.log(chalk.gray(`Searching for files matching: ${specificFilePattern}`));
+        path = specificFilePattern;
+      }
+      
+      // Expand patterns for common config files
+      if (path.includes('package-lock.json') || path.includes('*.json')) {
+        path = path.includes('*') ? path : '**/*.json';
+      }
+      
       const maxFiles = parseInt(options.max);
       const analysis = await analyzeCodebase(path, maxFiles);
       
-      console.log(chalk.gray(analysis));
+      if (!analysis || analysis.includes('No files found') || analysis.includes('(0 files)')) {
+        console.log(chalk.yellow('No files found with the specified pattern.'));
+        console.log(chalk.gray('Try these patterns:'));
+        console.log(chalk.gray('  **/*.json          (all JSON files)'));
+        console.log(chalk.gray('  **/package*.json   (package files)'));
+        console.log(chalk.gray('  **/*.{ts,js}       (TypeScript/JavaScript)'));
+        console.log(chalk.gray('  --file package-lock.json  (specific file)'));
+      } else {
+        console.log(chalk.gray(analysis));
+      }
       
     } catch (error) {
       console.error(chalk.red('Error exploring codebase:'), error instanceof Error ? error.message : error);

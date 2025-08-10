@@ -1,6 +1,30 @@
 #!/usr/bin/env node
 
-import 'dotenv/config';
+// Load environment variables from multiple locations
+import dotenv from 'dotenv';
+import { join, dirname } from 'path';
+import { existsSync } from 'fs';
+import { homedir } from 'os';
+import { fileURLToPath } from 'url';
+
+// Get __dirname equivalent for ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Try to load .env from multiple locations
+const envPaths = [
+  '.env',                           // Current directory
+  join(process.cwd(), '.env'),      // Current working directory
+  join(homedir(), '.heimdall.env'), // Home directory
+  join(__dirname, '../../.env'),    // Heimdall installation directory
+];
+
+for (const envPath of envPaths) {
+  if (existsSync(envPath)) {
+    dotenv.config({ path: envPath });
+    break;
+  }
+}
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { initCommand } from '../commands/init.js';
@@ -11,6 +35,10 @@ import { applyFixCommand } from '../commands/apply-fix.js';
 import { chatCommand } from '../commands/chat.js';
 import { exploreCommand } from '../commands/explore.js';
 import { cloneCommand } from '../commands/clone.js';
+import { watchCommand } from '../commands/watch.js';
+import { mergeCommand } from '../commands/merge.js';
+import { resolveCommand } from '../commands/resolve.js';
+import { rebaseCommand } from '../commands/rebase.js';
 import { ghCommand } from '../commands/gh.js';
 
 const program = new Command();
@@ -20,9 +48,9 @@ const showBanner = () => {
   console.log(chalk.cyan(`
 ██╗  ██╗███████╗██╗███╗   ███╗██████╗  █████╗ ██╗     ██╗     
 ██║  ██║██╔════╝██║████╗ ████║██╔══██╗██╔══██╗██║     ██║     
-███████║█████╗  ██║██╔████╔██║██████╔╝███████║██║     ██║     
+███████║█████╗  ██║██╔████╔██║██  ╔██╝███████║██║     ██║     
 ██╔══██║██╔══╝  ██║██║╚██╔╝██║██╔══██╗██╔══██║██║     ██║     
-██║  ██║███████╗██║██║ ╚═╝ ██║██║  ██║██║  ██║███████╗███████╗
+██║  ██║███████╗██║██║ ╚═╝ ██║██║████║██║  ██║███████╗███████╗
 ╚═╝  ╚═╝╚══════╝╚═╝╚═╝     ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝╚══════╝`));
   console.log(chalk.gray('                   Git, but agentic\n'));
 };
@@ -41,6 +69,10 @@ program.addCommand(prCommand);
 program.addCommand(applyFixCommand);
 program.addCommand(chatCommand);
 program.addCommand(exploreCommand);
+program.addCommand(watchCommand);
+program.addCommand(mergeCommand);
+program.addCommand(resolveCommand);
+program.addCommand(rebaseCommand);
 program.addCommand(ghCommand);
 
 // Global error handler

@@ -112,8 +112,8 @@ export const chatCommand = new Command('chat')
 function extractMentionedFiles(instruction: string): string[] {
   const files: string[] = [];
   
-  // Extract .ts, .js, .tsx, .jsx files mentioned
-  const fileMatches = instruction.match(/[\w\-\.\/]+\.(ts|js|tsx|jsx|py|go|rs|java|cpp|c|h)/g);
+  // Extract code files mentioned
+  const fileMatches = instruction.match(/[\w\-\.\/]+\.(ts|js|tsx|jsx|py|go|rs|java|cpp|c|h|json|yml|yaml|toml|md)/g);
   if (fileMatches) {
     files.push(...fileMatches);
   }
@@ -124,11 +124,35 @@ function extractMentionedFiles(instruction: string): string[] {
     files.push(...quotedFiles.map(f => f.slice(1, -1)));
   }
   
-  // Add src/ prefix if file seems to be in src
+  // Special handling for common config files mentioned by name
+  const configFilePatterns = [
+    'package-lock.json', 'package.json', 'tsconfig.json', 'pnpm-workspace.yaml',
+    '.gitignore', 'README.md', 'Dockerfile', 'docker-compose.yml'
+  ];
+  
+  for (const configFile of configFilePatterns) {
+    if (instruction.toLowerCase().includes(configFile.toLowerCase())) {
+      files.push(configFile);
+    }
+  }
+  
+  // Return files without assuming directory structure
   return files.map(file => {
-    if (!file.includes('/') && !file.startsWith('src/')) {
+    // Don't add src/ prefix for config files or files with paths
+    if (file.includes('/') || 
+        file.endsWith('.json') || 
+        file.endsWith('.yml') || 
+        file.endsWith('.yaml') || 
+        file.endsWith('.md') || 
+        file.startsWith('.')) {
+      return file;
+    }
+    
+    // Only add src/ prefix for source code files
+    if (file.match(/\.(ts|js|tsx|jsx)$/)) {
       return `src/lib/${file}`;
     }
+    
     return file;
   });
 }
@@ -169,9 +193,40 @@ async function executeOperation(command: string, args: string[]): Promise<void> 
       // Import and execute apply-fix logic
       const { applyUpdate } = await import('../lib/morph.js');
       const { readFile, writeFile } = await import('fs/promises');
+      const { existsSync } = await import('fs');
+      
+      // Check if file exists
+      if (!existsSync(file)) {
+        throw new Error(`File not found: ${file}`);
+      }
       
       const originalContent = await readFile(file, 'utf-8');
-      const updatedContent = await applyUpdate(originalContent, instruction);
+      
+      // Special handling for JSON files
+      let enhancedInstruction = instruction;
+      if (file.endsWith('.json')) {
+        enhancedInstruction = `Fix JSON syntax error: ${instruction}. Ensure the result is valid JSON with proper quotes, commas, and brackets.`;
+        
+        // Try to validate current JSON and provide context
+        try {
+          JSON.parse(originalContent);
+        } catch (jsonError) {
+          enhancedInstruction += ` Current JSON error: ${jsonError instanceof Error ? jsonError.message : String(jsonError)}`;
+        }
+      }
+      
+      const updatedContent = await applyUpdate(originalContent, enhancedInstruction);
+      
+      // Validate JSON after fixing if it's a JSON file
+      if (file.endsWith('.json')) {
+        try {
+          JSON.parse(updatedContent);
+          console.log(chalk.green('✓ JSON syntax is now valid'));
+        } catch (jsonError) {
+          console.log(chalk.yellow(`⚠ Warning: JSON may still have issues: ${jsonError instanceof Error ? jsonError.message : String(jsonError)}`));
+        }
+      }
+      
       await writeFile(file, updatedContent, 'utf-8');
       break;
       
@@ -192,8 +247,18 @@ async function executeOperation(command: string, args: string[]): Promise<void> 
         throw new Error('No files to commit');
       }
       
-      const message = await generateCommitMessage(stagedFiles);
-      await commitChanges(message);
+      // Check if custom message provided with -m flag
+      let commitMessage: string;
+      const messageIndex = args.indexOf('-m');
+      if (messageIndex !== -1 && args[messageIndex + 1]) {
+        // Use custom message from -m flag
+        commitMessage = args.slice(messageIndex + 1).join(' ');
+      } else {
+        // Generate message from staged files
+        commitMessage = await generateCommitMessage(stagedFiles);
+      }
+      
+      await commitChanges(commitMessage);
       break;
       
     case 'pr':
